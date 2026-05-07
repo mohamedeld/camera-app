@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Button,
   Image,
   Pressable,
   StyleSheet,
@@ -14,8 +15,11 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
+import * as FileSystem from "expo-file-system/legacy";
 
 import { MaterialIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import path from "path";
 const CameraScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>("back");
@@ -42,15 +46,30 @@ const CameraScreen = () => {
     return <ActivityIndicator />;
   }
 
+  const saveFile = async (uri: string) => {
+    const filename = path.parse(uri)?.base;
+    await FileSystem.copyAsync({
+      from: uri,
+      to: FileSystem.documentDirectory + filename,
+    });
+    setPicture(undefined);
+    router.back();
+  };
+
   if (picture) {
     return (
-      <View>
+      <View style={{ flex: 1 }}>
         <Image
           source={{
             uri: picture?.uri,
           }}
           style={styles.img}
         />
+        <View style={{ padding: 10 }}>
+          <SafeAreaView edges={["bottom"]}>
+            <Button title="Save" onPress={() => saveFile(picture?.uri)} />
+          </SafeAreaView>
+        </View>
         <MaterialIcons
           name="close"
           size={35}
@@ -121,7 +140,7 @@ const styles = StyleSheet.create({
   },
   img: {
     width: "100%",
-    height: "100%",
+    flex: 1,
   },
   imgCloseBtn: {
     position: "absolute",

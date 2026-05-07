@@ -1,14 +1,61 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import React from "react";
-import { Link } from "expo-router";
+import {
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { Link, useFocusEffect } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
+
+type Media = {
+  name: string;
+  uri: string;
+};
+
 const HomeScreen = () => {
+  const [images, setImages] = useState<Media[]>([]);
+  const loadFiles = async () => {
+    if (!FileSystem.documentDirectory) return;
+
+    const res = await FileSystem.readDirectoryAsync(
+      FileSystem.documentDirectory,
+    );
+    setImages(
+      res?.map((file) => ({
+        name: file,
+        uri: FileSystem.documentDirectory + file,
+      })),
+    );
+  };
+  useFocusEffect(
+    useCallback(() => {
+      loadFiles();
+    }, []),
+  );
+
   return (
     <View style={styles.container}>
-      <Text>HomeScreens</Text>
-      <Link href={"/image-1"}>Image 1</Link>
-      <Link href={"/image-2"}>Image 2</Link>
-      <Link href={"/image-3"}>Image 3</Link>
+      <FlatList
+        data={images}
+        numColumns={3}
+        renderItem={({ item }) => (
+          <Link href={`/${item?.name}`} asChild>
+            <Pressable style={styles.imageContainer}>
+              <Image
+                source={{ uri: item?.uri }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </Pressable>
+          </Link>
+        )}
+        keyExtractor={(item, idx) => `${item?.uri}-${idx}`}
+      />
+
       <Link href={"/camera"} asChild>
         <Pressable style={styles.cameraContainer}>
           <MaterialIcons name="photo-camera" size={30} color={"white"} />
@@ -23,10 +70,19 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: "4px",
   },
+
+  imageContainer: {
+    flex: 1,
+    margin: 2,
+  },
+
+  image: {
+    width: "100%",
+    aspectRatio: 3 / 4,
+    borderRadius: 8,
+  },
+
   cameraContainer: {
     backgroundColor: "royalblue",
     padding: 15,

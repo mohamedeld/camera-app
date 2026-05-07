@@ -26,6 +26,11 @@ const CameraScreen = () => {
   const [picture, setPicture] = useState<CameraCapturedPicture | undefined>();
   const camera = useRef<CameraView>(null);
 
+  const [videoState, SetVideoState] = useState({
+    isRecording: false,
+    video: "",
+  });
+
   useEffect(() => {
     if (permission && !permission?.granted && permission?.canAskAgain) {
       requestPermission();
@@ -54,6 +59,23 @@ const CameraScreen = () => {
     });
     setPicture(undefined);
     router.back();
+  };
+
+  const startRecording = async () => {
+    SetVideoState((prev) => ({
+      ...prev,
+      isRecording: true,
+    }));
+    const res = await camera?.current?.recordAsync({
+      maxDuration: 3,
+    });
+    if (res) {
+      SetVideoState((prev) => ({
+        ...prev,
+        isRecording: false,
+        video: res?.uri,
+      }));
+    }
   };
 
   if (picture) {
@@ -91,6 +113,7 @@ const CameraScreen = () => {
             size={24}
             color="white"
             onPress={handleCameraFacing}
+            onLongPress={startRecording}
           />
         </View>
       </CameraView>
